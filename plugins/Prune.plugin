@@ -1,0 +1,12 @@
+#
+# Prune.plugin -- 
+#
+
+Prune()
+{
+   return 0
+}
+
+#
+# End of Prune.plugin
+#

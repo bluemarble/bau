@@ -1,0 +1,41 @@
+
+# This is the prolog.
+O := .o
+%$(O) : %.c
+	$(CC) -o $@ $< $(CCFLAGS) -c
+toplevel : targets
+# process: ./libsimple/Baufile
+# outfile: libsimple
+libsimpleINC = ./libsimple
+libsimpleLIB = ./libsimple
+# sourcefiles: bar.c faz.c foo.c
+./libsimple/bar.o : ./libsimple/bar.c
+	$(CC) -o $@ $< -I./libsimple -c 
+./libsimple/faz.o : ./libsimple/faz.c
+	$(CC) -o $@ $< -I./libsimple -c 
+./libsimple/foo.o : ./libsimple/foo.c
+	$(CC) -o $@ $< -I./libsimple -c 
+libsimpleNode = ./libsimple/libsimple.lib
+./libsimple/libsimple.lib : ./libsimple/bar.o ./libsimple/faz.o ./libsimple/foo.o 
+	$(AR) -rf $@ $?
+clean ::
+	$(RM) $(RMFLAGS) ./libsimple/libsimple.lib
+	$(RM) $(RMFLAGS) ./libsimple/bar.o
+	$(RM) $(RMFLAGS) ./libsimple/faz.o
+	$(RM) $(RMFLAGS) ./libsimple/foo.o
+targets :  ./libsimple/libsimple.lib
+# process: ./tool/Baufile
+# outfile: tool
+# sourcefiles: tool.c
+./tool/tool.o : ./tool/tool.c
+	$(CC) -o $@ $<  -I$(libsimpleINC) -c 
+toolNode : ./tool/tool.exe
+./tool/tool.exe : $(libsimpleNode)
+./tool/tool.exe : ./tool/tool.o 
+	$(CC) -o $@ $<  -L$(libsimpleLIB) -llibsimple
+clean ::
+	$(RM) $(RMFLAGS) ./tool/tool.exe
+	$(RM) $(RMFLAGS) ./tool/tool.o
+targets :  ./tool/tool.exe
+
+# This is the epiolog.

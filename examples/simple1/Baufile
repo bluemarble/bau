@@ -1,0 +1,9 @@
+#
+# Baufile
+#
+
+MakeProgram hello.c
+
+#
+# End of Baufile
+#

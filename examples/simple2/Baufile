@@ -1,0 +1,11 @@
+#
+# Baufile
+#
+
+MakeProgram \
+   --out tool${E} \
+   --source tool.c util.c
+
+#
+# End of Baufile
+#

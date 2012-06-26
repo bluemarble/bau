@@ -1,0 +1,17 @@
+#
+# Baufile - Describe the construction of the libsimple library.
+#
+
+SRC="
+   bar.c
+   faz.c
+   foo.c
+   "
+
+MakeLibrary \
+   --out libsimple \
+   --source ${SRC}
+
+#
+# End of Baufile
+#

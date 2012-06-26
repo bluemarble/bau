@@ -1,0 +1,9 @@
+#
+
+Includes="-I. -I/usr/local/blue/include"
+
+#MakeProgram --out program$E --source $(/bin/find -name '*.cpp')
+
+#
+# End of Baufile
+#

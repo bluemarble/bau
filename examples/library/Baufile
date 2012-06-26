@@ -1,0 +1,7 @@
+#
+
+MakeLibrary --out tool${LIB} --source t1.c t2.c t3.c
+
+#
+# End of Baufile
+#

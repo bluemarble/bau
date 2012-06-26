@@ -1,0 +1,8 @@
+
+libsimple$(LIB)
+   foo$(O)
+      foo.c
+         <libsimple.h>
+   bar$(O)
+      bar.c
+         <libsimple.h>

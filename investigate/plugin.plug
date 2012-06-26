@@ -1,0 +1,14 @@
+#
+#
+#
+
+#echo "hello from the plugin definition file"
+
+plugin()
+{
+   echo "hello from the plugin implementation"
+}
+
+#
+#
+#

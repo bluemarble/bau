@@ -1,0 +1,157 @@
+#
+# MakeProgram -- Describe how to compile/link a C/C++ program.
+#
+
+# int
+MakeProgram()
+{
+   local fname="MakeProgram"
+
+   local thisNode=""
+   local input=""
+   local output=""
+   local derivedFileList
+
+   local relativeDir="$bauRelDir"
+   local includeDirs
+   local useLibs=""
+
+   # todo: use some sort of global as default value
+   local ccflags=""
+   local ldflags=""
+
+   # command option parsing
+   while [ $# -gt 0 ] ; do
+      case "$1" in 
+      --out|-o)
+         bauEmit "# outfile: $2\n"
+	 output="${2}${E}"
+	 thisNode="${2}Node"
+         shift
+	 ;;
+      --source) 
+         shift 
+	 bauEmit "# sourcefiles: $*\n"
+	 input="$*"
+	 ;;
+      --define)
+	 ccflags="${ccflags} -D${2}"
+	 shift
+         ;;
+      --includedir) # TODO
+	 #bauEmit "CCFLAGS += -I${2}\n"
+	 ccflags="${ccflags} -I${2}"
+         shift
+	 ;;
+      --libdir) # TODO
+	 #bauEmit "LDFLAGS += -L${2}\n"
+	 ldflags="${ldflags} -L${2}"
+         shift
+	 ;;
+      --uselib) # TODO
+         useLibs="${useLibs} ${2}"
+	 #bauEmit "LDFLAGS += -l${2}\n"
+         ccflags="${ccflags} -I"'$('"${2}"'INC)'
+	 ldflags="${ldflags} -L"'$('"${2}"'LIB)'" -l${2}"
+         shift
+	 ;;
+      --help)
+	 echo "Usage: ${fname} [ options ] ( --source file ... | file ... )"
+	 echo "Options:"
+	 echo "   --out output-basename"
+	 echo "   --source file ..."
+	 echo "   --define macro"
+	 echo "   --includedir directory"
+	 echo "   --libdir directory"
+	 return 0
+         ;;
+      --) # end of options option
+         shift
+         break
+	 ;;
+      *)  # unknown option; perhaps a list of source files?
+	 break 
+	 ;;
+      esac
+      shift
+   done
+
+   if [ $# -gt 0 -a "$input" = "" ] ; then
+      input="$*"
+   fi
+   if [ "$input" = "" ] ; then
+      _bt_Error "no input files specified"
+      return 1
+   fi
+
+   derivedFileList=""
+   for file in $input ; do
+      case "$file" in
+      *.c)
+         derivedFile="${file%.c}${O}"
+	 bauEmit "${relativeDir}/${derivedFile} : ${relativeDir}/${file}\n"
+         bauEmit '\t$(CC) -o $@ $< '"${ccflags}"' -c \n'
+	 derivedFileList="$derivedFileList $derivedFile"
+	 if [ "$output" = "" ] ; then
+	    output="${file%.c}${E}"
+	    thisNode="${file%.c}Node"
+	 fi
+	 ;;
+      *.cpp)
+         derivedFile="${file%.cpp}${O}"
+	 bauEmit "${relativeDir}/${derivedFile} : ${relativeDir}/${file}\n"
+         bauEmit '\t$(CC) -o $@ $< '"${ccflags}"' -c \n'
+	 derivedFileList="$derivedFileList $derivedFile"
+	 if [ "$output" = "" ] ; then
+	    output="${file%.cpp}${E}"
+	    thisNode="${file%.cpp}Node"
+	 fi
+	 ;;
+      *)
+         _bt_Error "unknown file type: $file"
+         return 1
+	 ;;
+      esac
+   done
+
+   if [ "$derivedFileList" = "" ] ; then
+      _bt_Error "no intermediates derived"
+      return 1
+   fi
+   if [ "$output" = "" ] ; then
+      _bt_Error "no output specified"
+      return 1
+   fi
+
+   # stitch together the nodes spec'd by --uselibs directives
+   bauEmit "${thisNode} = ${relativeDir}/${output}\n"
+   if [ "${useLibs}" != "" ] ; then
+      for useLib in ${useLibs} ; do
+         bauEmit "${relativeDir}/${output} : "'$('"${useLib}Node"')'"\n"
+      done
+   fi
+
+   # target for the final output
+   bauEmit "${relativeDir}/${output} : "
+   for derivedFile in $derivedFileList ; do
+      bauEmit "${relativeDir}/${derivedFile} "
+   done
+   bauEmit "\n"
+   #bauEmit '\t$(CC) -o $@ $< $(LDFLAGS)\n'
+   bauEmit '\t$(CC) -o $@ $< '"${ldflags}"'\n'
+
+   # 'clean' target
+   bauEmit 'clean ::\n'
+   bauEmit '\t$(RM) $(RMFLAGS) '"${relativeDir}/${output}"'\n'
+   for derivedFile in $derivedFileList ; do
+      bauEmit '\t$(RM) $(RMFLAGS) '"${relativeDir}/${derivedFile}"'\n'
+   done
+
+   targets="$targets ${relativeDir}/${output}"
+
+   return 0
+}
+
+#
+# End of MakeProgram.plugin
+#

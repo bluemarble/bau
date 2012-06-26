@@ -1,0 +1,78 @@
+#
+# MakeScript.plugin --
+#
+
+MakeScript()
+{
+   local fname="MakeScript"
+
+   local input=""
+   local output=""
+   local skeleton=""
+
+   local relativeDir="$bauRelDir"
+   local includeDirs
+
+   # command option parsing
+   while [ $# -gt 0 ] ; do
+      case "$1" in 
+      --out|-o)
+         bauEmit "# outfile: $2\n"
+	 output="$2"
+         shift
+	 ;;
+      --source) 
+         shift 
+	 bauEmit "# sourcefiles: $*\n"
+	 input="$*"
+	 ;;
+      --skeleton)
+	 skeleton="$2"
+	 shift
+         ;;
+      --) # end of options option
+         shift
+         break
+	 ;;
+      *)  # unknown option; perhaps a list of source files?
+	 break 
+	 ;;
+      esac
+      shift
+   done
+
+   if [ $# -gt 0 -a "$input" = "" ] ; then
+      input="$*"
+   fi
+   if [ "$input" = "" ] ; then
+      _bt_Error "no input files specified"
+      return 1
+   fi
+
+   if [ "$output" = "" ] ; then
+      _bt_Error "no output specified"
+      return 1
+   fi
+
+   # target for the final output
+   bauEmit "${relativeDir}/${output} : "
+   for srcFile in $input ; do
+      bauEmit "${relativeDir}/${srcFile} "
+   done
+   bauEmit "\n"
+   #bauEmit '\tbt_build_script >$@ '"${skeleton}"' $<\n'
+   bauEmit '\t/usr/local/bluemarble/lib/bau/bt-makescript-helper.sh >$@ --skeleton '"${skeleton}"' $<\n'
+   bauEmit '\tchmod +x $@\n'
+
+   # 'clean' target
+   bauEmit 'clean ::\n'
+   bauEmit '\t$(RM) $(RMFLAGS) '"${relativeDir}/${output}"'\n'
+
+   targets="$targets ${relativeDir}/${output}"
+
+   return 0
+}
+
+#
+# End of MakeScript.plugin
+#

@@ -1,0 +1,135 @@
+#
+# MakeLibrary -- Describe how to construct a C/C++ library.
+#
+
+# int
+MakeLibrary()
+{
+   local thisNode=""
+
+   local input=""
+   local output=""
+   local derivedFileList
+
+   local relativeDir="$bauRelDir"
+   local includeDirs
+
+   # todo: use some sort of global as default value
+   #local ccflags="-I."
+   local ccflags="-I${relativeDir}"
+   local ldflags=""
+
+   # command option parsing
+   while [ $# -gt 0 ] ; do
+      case "$1" in 
+      --out|-o)
+         bauEmit "# outfile: $2\n"
+         bauEmit "${2}INC = ${relativeDir}\n"
+         bauEmit "${2}LIB = ${relativeDir}\n"
+	 thisNode="${2}Node"
+	 output="${2}${LIB}"
+         shift
+	 ;;
+      --source) 
+         shift 
+	 bauEmit "# sourcefiles: $*\n"
+	 input="$*"
+	 ;;
+      --define)
+	 ccflags="${ccflags} -D${2}"
+	 shift
+         ;;
+      --includedir) # TODO
+	 #bauEmit "CCFLAGS += -I${2}\n"
+	 ccflags="${ccflags} -I${2}"
+         shift
+	 ;;
+      --optimize) # TODO
+	 case "$2" in
+	 --*)
+	    ;;
+	 *) # this arg specifies the optimization level
+	    shift
+	    ;;
+	 esac
+	 ;;
+      --) # end of options option
+         shift
+         break
+	 ;;
+      *)  # unknown option; perhaps a list of source files?
+	 break 
+	 ;;
+      esac
+      shift
+   done
+
+   if [ $# -gt 0 -a "$input" = "" ] ; then
+      input="$*"
+   fi
+   if [ "$input" = "" ] ; then
+      _bt_Error "no input files specified"
+      return 1
+   fi
+
+   derivedFileList=""
+   for file in $input ; do
+      case "$file" in
+      *.c)
+         derivedFile="${file%.c}${O}"
+	 bauEmit "${relativeDir}/${derivedFile} : ${relativeDir}/${file}\n"
+         bauEmit '\t$(CC) -o $@ $< '"${ccflags}"' -c \n'
+	 derivedFileList="$derivedFileList $derivedFile"
+	 if [ "$output" = "" ] ; then
+	    output="${file%.c}${LIB}"
+	 fi
+	 ;;
+      *.cpp)
+         derivedFile="${file%.cpp}${O}"
+	 bauEmit "${relativeDir}/${derivedFile} : ${relativeDir}/${file}\n"
+         bauEmit '\t$(CC) -o $@ $< '"${ccflags}"' -c \n'
+	 derivedFileList="$derivedFileList $derivedFile"
+	 if [ "$output" = "" ] ; then
+	    output="${file%.c}${LIB}"
+	 fi
+	 ;;
+      *)
+         _bt_Error "unknown file type: $file"
+         return 1
+	 ;;
+      esac
+   done
+
+   if [ "$derivedFileList" = "" ] ; then
+      _bt_Error "no intermediates derived"
+      return 1
+   fi
+   if [ "$output" = "" ] ; then
+      _bt_Error "no output specified"
+      return 1
+   fi
+
+   # target for the final output
+   bauEmit "${thisNode} = ${relativeDir}/${output}\n"
+   bauEmit "${relativeDir}/${output} : "
+   for derivedFile in $derivedFileList ; do
+      bauEmit "${relativeDir}/${derivedFile} "
+   done
+   bauEmit "\n"
+   bauEmit '\t$(AR) -rf $@ $?\n'
+
+   # 'clean' target
+   bauEmit 'clean ::\n'
+   bauEmit '\t$(RM) $(RMFLAGS) '"${relativeDir}/${output}"'\n'
+   for derivedFile in $derivedFileList ; do
+      bauEmit '\t$(RM) $(RMFLAGS) '"${relativeDir}/${derivedFile}"'\n'
+   done
+
+   targets="$targets ${relativeDir}/${output}"
+
+   return 0
+}
+
+#
+# End of MakeLibrary.plugin
+#

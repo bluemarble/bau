@@ -1,0 +1,12 @@
+#
+# Baufile - Describe the construction of the 'tool' program.
+#
+
+MakeProgram \
+   --out tool \
+   --uselib libsimple \
+   --source tool.c
+
+#
+# End of Baufile
+#
